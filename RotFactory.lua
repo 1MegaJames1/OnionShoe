@@ -35,7 +35,7 @@ container.Name = "Bigbah"
 container.Draggable = true
 container.Active = true
 container.Position = UDim2.new(0.35,0,0.35,0)
-container.BackgroundColor3 = Color3.fromRGB(255,255,255) --(118, 16, 24)
+container.BackgroundColor3 = Color3.fromRGB(255,255,255)
 addCorner(container, 0.1)
 
 local title = Instance.new("TextLabel")
@@ -173,17 +173,13 @@ local function ParseGenerationValue(text)
 	return number
 end
 
--- Corrected and Completed ghostUI function
 local ghostbool = false
 local function ghostUI(ui)
-	-- Determine the target transparency based on the ghostbool state
 	local targetTransparency = ghostbool and 1 or 0
 
-	-- Exclude the ghost button itself from being ghosted
 	if ui == ghostButton then return end
 
 	if ui:IsA("TextButton") or ui:IsA("TextLabel") then
-		-- Tween the background and text transparency
 		local tweenBackground = tweenService:Create(ui, tweenInfo, {
 			BackgroundTransparency = targetTransparency,
 		})
@@ -195,7 +191,6 @@ local function ghostUI(ui)
 		tweenText:Play()
 
 	elseif ui:IsA("Frame") then
-		-- This covers the 'container' and the 'fx' frame inside the switches
 		local tween = tweenService:Create(ui, tweenInfo, {
 			BackgroundTransparency = targetTransparency,
 		})
@@ -203,11 +198,20 @@ local function ghostUI(ui)
 	end
 end
 
+local speedBoostActive = false
+local jumpBoostActive = false
+
+local PRIORITY_WALKSPEED = 65
+local DEFAULT_WALKSPEED = 18
+local PRIORITY_JUMPHEIGHT = 20
+local DEFAULT_JUMPHEIGHT = 7.2
+
 addSwitch("Speed Boost", "speedToggle", 2, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum.WalkSpeed = enabled and 65 or 18
+		hum.WalkSpeed = enabled and PRIORITY_WALKSPEED or DEFAULT_WALKSPEED
+		speedBoostActive = enabled
 	end
 end)
 
@@ -215,7 +219,23 @@ addSwitch("Jump Boost", "jumpToggle", 4, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum.JumpHeight = enabled and 20 or 7.2
+		hum.JumpHeight = enabled and PRIORITY_JUMPHEIGHT or DEFAULT_JUMPHEIGHT
+		jumpBoostActive = enabled
+	end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+	if hum then
+		if speedBoostActive and hum.WalkSpeed ~= PRIORITY_WALKSPEED then
+			hum.WalkSpeed = PRIORITY_WALKSPEED
+		end
+
+		if jumpBoostActive and hum.JumpHeight ~= PRIORITY_JUMPHEIGHT then
+			hum.JumpHeight = PRIORITY_JUMPHEIGHT
+		end
 	end
 end)
 
@@ -231,10 +251,8 @@ ghostButton.MouseButton1Click:Connect(function()
 	ghostbool = not ghostbool
 	for _, ui in ipairs(screengui:WaitForChild("Bigbah"):GetChildren()) do
 		if not ui:HasTag("Invis") then
-			-- Pass the UI element to the now-functional ghostUI
 			ghostUI(ui)
 		end
-		-- Also check children of 'core' which are the switches
 		if ui.Name == "Core" then
 			for _, child in ipairs(ui:GetChildren()) do
 				if not child:HasTag("Invis") then
