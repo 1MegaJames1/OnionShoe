@@ -1,11 +1,33 @@
-local player = game.Players.LocalPlayer
+local function waitForGame()
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+end
+waitForGame()
+
+-- Fast service caching
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+repeat task.wait() until player
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local ContentProvider = game:GetService("ContentProvider")
+local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local Stats = game:GetService("Stats")
+
+-- Cache workspace for faster access
+local workspace = workspace
+
+local playerGui = player:WaitForChild("PlayerGui", 10)
+if not playerGui then warn("PlayerGui failed to load") return end
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local userInputService = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-local tweenService = game:GetService("TweenService")
-local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local screengui = Instance.new("ScreenGui")
 script.Name = "Sigma"
@@ -18,17 +40,14 @@ local function addCorner(parent, radius)
 	local uiCorner = Instance.new("UICorner")
 	uiCorner.Parent = parent
 	uiCorner.CornerRadius = UDim.new(radius, 0)
-	uiCorner:AddTag("Invis")
 end
 
 local container = Instance.new("Frame")
 local containerGradient = Instance.new("UIGradient")
 local containerUIStroke = Instance.new("UIStroke") containerUIStroke.Parent = container containerUIStroke.Thickness = 3
-containerUIStroke:AddTag("Invis")
 containerGradient.Parent = container
 containerGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0.447059, 0.105882, 0.113725)), ColorSequenceKeypoint.new(1,Color3.new(0.0156863, 0.247059, 0.317647))})
 containerGradient.Rotation = 45
-containerGradient:AddTag("Invis")
 container.Parent = screengui
 container.Size = UDim2.new(0.20,0,0.3,0)
 container.Name = "Bigbah"
@@ -60,7 +79,6 @@ core.Position = UDim2.new(0,0,0.2,0)
 core.Size = UDim2.new(1, 0, 0.65, 0)
 core.BorderSizePixel = 0
 core.BackgroundTransparency = 1
-core:AddTag("Invis")
 
 local grid = Instance.new("UIGridLayout")
 grid.Name = "Grid"
@@ -70,7 +88,6 @@ grid.CellPadding = UDim2.new(0.035,0,0.05,0)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.FillDirectionMaxCells = 4
 grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-grid:AddTag("Invis")
 
 local function addSwitch(text, name, order, callback)
 	local on = false
@@ -105,7 +122,7 @@ local function addSwitch(text, name, order, callback)
 	bttnClk.MouseButton1Click:connect(function()
 		on = not on
 		local targetPos = on and UDim2.new(0.75,0,fx.Position.Y.Scale,0) or UDim2.new(0,0,fx.Position.Y.Scale,0)
-		local tween = tweenService:Create(fx, tweenInfo, {Position = targetPos})
+		local tween = TweenService:Create(fx, tweenInfo, {Position = targetPos})
 		tween:Play()
 		task.wait(0.3)
 		if on then
@@ -157,7 +174,7 @@ local function scale(change)
 	local currentY = container.Size.Y.Scale
 	local newX = math.clamp(currentX + change, 0.2, 0.45)
 	local newY = math.clamp(currentY + change, 0.3, 0.55)
-	local tween = tweenService:Create(container, tweenInfo, {Size = UDim2.new(newX,0,newY,0)})
+	local tween = TweenService:Create(container, tweenInfo, {Size = UDim2.new(newX,0,newY,0)})
 	tween:Play()
 end
 
@@ -173,40 +190,15 @@ local function ParseGenerationValue(text)
 	return number
 end
 
-local ghostbool = false
-local function ghostUI(ui)
-	local targetTransparency = ghostbool and 1 or 0
-
-	if ui == ghostButton then return end
-
-	if ui:IsA("TextButton") or ui:IsA("TextLabel") then
-		local tweenBackground = tweenService:Create(ui, tweenInfo, {
-			BackgroundTransparency = targetTransparency,
-		})
-		tweenBackground:Play()
-
-		local tweenText = tweenService:Create(ui, tweenInfo, {
-			TextTransparency = targetTransparency,
-		})
-		tweenText:Play()
-
-	elseif ui:IsA("Frame") then
-		local tween = tweenService:Create(ui, tweenInfo, {
-			BackgroundTransparency = targetTransparency,
-		})
-		tween:Play()
-	end
-end
-
 local speedBoostActive = false
 local jumpBoostActive = false
 
-local PRIORITY_WALKSPEED = 65
+local PRIORITY_WALKSPEED = 60 -- Needs Work
 local DEFAULT_WALKSPEED = 18
-local PRIORITY_JUMPHEIGHT = 20
+local PRIORITY_JUMPHEIGHT = 20 --Good
 local DEFAULT_JUMPHEIGHT = 7.2
 
-addSwitch("Speed Boost", "speedToggle", 2, function(enabled)
+addSwitch("Speed Boost:", "speedToggle", 2, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
@@ -215,7 +207,7 @@ addSwitch("Speed Boost", "speedToggle", 2, function(enabled)
 	end
 end)
 
-addSwitch("Jump Boost", "jumpToggle", 4, function(enabled)
+addSwitch("Jump Boost:", "jumpToggle", 4, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
@@ -223,6 +215,35 @@ addSwitch("Jump Boost", "jumpToggle", 4, function(enabled)
 		jumpBoostActive = enabled
 	end
 end)
+addSwitch("Scan World:", "scanner", 6, function(enabled)
+	for _, files in ipairs(workspace:GetChildren()) do
+		if files:IsA("Folder") or files:IsA("Model") then
+			print(files) 
+			local humanoidRootPart = files:FindFirstChild("HumanoidRootPart")
+
+			if files:IsA("Model") and humanoidRootPart then
+
+				local PlayerUser = Players:GetPlayerFromCharacter(files)
+
+				if PlayerUser then
+					print("---")
+					print("Player character found:", files.Name)
+
+					print("Player named:", PlayerUser.Name, "They have:")
+
+					for _, obj in ipairs(PlayerUser:GetChildren()) do
+						print("  -", obj.Name, "(" .. obj.ClassName .. ")")
+					end
+					print("---")
+
+				else
+					print("Humanoid detected in model:", files.Name .. " (NPC or not loaded)")
+				end
+			end
+		end
+	end
+end)
+
 
 game:GetService("RunService").Stepped:Connect(function()
 	local char = player.Character
@@ -247,18 +268,3 @@ scaleDownButton.MouseButton1Click:Connect(function()
 	scale(-0.05)
 end)
 
-ghostButton.MouseButton1Click:Connect(function()
-	ghostbool = not ghostbool
-	for _, ui in ipairs(screengui:WaitForChild("Bigbah"):GetChildren()) do
-		if not ui:HasTag("Invis") then
-			ghostUI(ui)
-		end
-		if ui.Name == "Core" then
-			for _, child in ipairs(ui:GetChildren()) do
-				if not child:HasTag("Invis") then
-					ghostUI(child)
-				end
-			end
-		end
-	end
-end)
