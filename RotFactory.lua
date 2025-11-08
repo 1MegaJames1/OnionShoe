@@ -5,7 +5,7 @@ local function waitForGame()
 end
 waitForGame()
 
--- Fast service caching
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 repeat task.wait() until player
@@ -20,14 +20,14 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local Stats = game:GetService("Stats")
+local plotsFolder = nil
 
--- Cache workspace for faster access
+
 local workspace = workspace
+plotsFolder = workspace:WaitForChild("Plots", 10)
 
 local playerGui = player:WaitForChild("PlayerGui", 10)
 if not playerGui then warn("PlayerGui failed to load") return end
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
 
 local screengui = Instance.new("ScreenGui")
 script.Name = "Sigma"
@@ -89,6 +89,13 @@ grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.FillDirectionMaxCells = 4
 grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
+local function getCharacter(time)
+	time = time or 5
+	if not player then return nil end
+	local character = player.Character or player.CharacterAdded:Wait()
+	return character
+end
+
 local function addSwitch(text, name, order, callback)
 	local on = false
 	local main = Instance.new("Frame")
@@ -133,6 +140,25 @@ local function addSwitch(text, name, order, callback)
 		callback(on)
 	end)
 end
+
+local CSG = Instance.new("Frame")
+CSG.Parent = screengui
+CSG.Size = UDim2.new(0.075,0,0.05,0)
+CSG.Position = UDim2.new(0,0,0.5,0)
+local currentSpeedGui = Instance.new("TextLabel")
+currentSpeedGui.Parent = CSG
+currentSpeedGui.Name = "CurrentSpeedGui"
+currentSpeedGui.Size = UDim2.new(1,0,1,0)
+currentSpeedGui.TextColor = BrickColor.White()
+currentSpeedGui.TextWrapped = false
+currentSpeedGui.Font = Enum.Font.GothamBold
+currentSpeedGui.BackgroundTransparency = 1
+currentSpeedGui.TextScaled = true
+
+local currentSpeedGuiGradient = Instance.new("UIGradient")
+currentSpeedGuiGradient.Parent = CSG
+currentSpeedGuiGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0.447059, 0.105882, 0.113725)), ColorSequenceKeypoint.new(1,Color3.new(0.0156863, 0.247059, 0.317647))})
+currentSpeedGuiGradient.Rotation = -45
 
 local scaleUpButton = Instance.new("TextButton")
 scaleUpButton.Parent = container
@@ -215,35 +241,16 @@ addSwitch("Jump Boost:", "jumpToggle", 4, function(enabled)
 		jumpBoostActive = enabled
 	end
 end)
-addSwitch("Scan World:", "scanner", 6, function(enabled)
-	for _, files in ipairs(workspace:GetChildren()) do
-		if files:IsA("Folder") or files:IsA("Model") then
-			print(files) 
-			local humanoidRootPart = files:FindFirstChild("HumanoidRootPart")
-
-			if files:IsA("Model") and humanoidRootPart then
-
-				local PlayerUser = Players:GetPlayerFromCharacter(files)
-
-				if PlayerUser then
-					print("---")
-					print("Player character found:", files.Name)
-
-					print("Player named:", PlayerUser.Name, "They have:")
-
-					for _, obj in ipairs(PlayerUser:GetChildren()) do
-						print("  -", obj.Name, "(" .. obj.ClassName .. ")")
-					end
-					print("---")
-
-				else
-					print("Humanoid detected in model:", files.Name .. " (NPC or not loaded)")
-				end
-			end
+addSwitch("Scanner:", "scanner", 6, function(enabled)
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("TextLabel") and obj.Name == "Generation" then
+			local value = ParseGenerationValue(obj.Text)
+			local brainrot = obj:FindFirstAncestorOfClass("Model")
+			
+			print("BrainRot: ",brainrot, " |  Value: ",value)
 		end
 	end
 end)
-
 
 game:GetService("RunService").Stepped:Connect(function()
 	local char = player.Character
@@ -257,6 +264,7 @@ game:GetService("RunService").Stepped:Connect(function()
 		if jumpBoostActive and hum.JumpHeight ~= PRIORITY_JUMPHEIGHT then
 			hum.JumpHeight = PRIORITY_JUMPHEIGHT
 		end
+		currentSpeedGui.Text = "Speed: " .. math.floor(hum.WalkSpeed)
 	end
 end)
 
