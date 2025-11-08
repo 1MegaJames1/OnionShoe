@@ -4,7 +4,7 @@ local function waitForGame()
 	end
 end
 waitForGame()
-
+--//Waypoints, FindBest, TpTo, 
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -96,11 +96,11 @@ local function getCharacter(time)
 	return character
 end
 
-local function addSwitch(text, name, order, callback)
+local function addSwitch(parent ,text, name, order, callback)
 	local on = false
 	local main = Instance.new("Frame")
 	local bttnTxt = Instance.new("TextLabel")
-	bttnTxt.Parent = core
+	bttnTxt.Parent = parent
 	bttnTxt.Text = text
 	bttnTxt.TextColor3 = Color3.fromRGB(255,255,255)
 	bttnTxt.TextScaled = true
@@ -111,7 +111,7 @@ local function addSwitch(text, name, order, callback)
 	addCorner(bttnTxt, 0.3)
 
 	local bttnClk = Instance.new("TextButton")
-	bttnClk.Parent = core
+	bttnClk.Parent = parent
 	bttnClk.Name = name
 	bttnClk.LayoutOrder = order
 	bttnClk.Text = ""
@@ -195,6 +195,24 @@ ghostButton.Text = "👻"
 ghostButton.BackgroundTransparency = 0.75
 ghostButton.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
 ghostButton.Position = UDim2.new(0.375,0,0.825,0)
+
+
+
+local FindBestGUIMenu = Instance.new("ScreenGui") FindBestGUIMenu.Parent = player:WaitForChild("PlayerGui")
+	FindBestGUIMenu.Enabled = false
+	FindBestGUIMenu.ResetOnSpawn = false
+	FindBestGUIMenu.IgnoreGuiInset = true
+local FindBestGUIFrame = Instance.new("Frame") FindBestGUIFrame.Parent = FindBestGUIMenu
+	FindBestGUIFrame.Size = UDim2.new(0.2,0,0.3,0)
+	FindBestGUIFrame.Draggable = true
+	FindBestGUIFrame.Active = true
+	FindBestGUIFrame.Position = UDim2.new(-0.2,0,0.135,0)
+	
+	
+	addCorner(FindBestGUIFrame, 0.2)
+local FindBestGUIUIStroke = Instance.new("UIStroke") FindBestGUIUIStroke.Parent = FindBestGUIFrame FindBestGUIUIStroke.Thickness = 3
+local FindBestGUIGradient = Instance.new("UIGradient") FindBestGUIGradient.Parent = FindBestGUIFrame FindBestGUIGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0.447059, 0.105882, 0.113725)), ColorSequenceKeypoint.new(1,Color3.new(0.0156863, 0.247059, 0.317647))}) FindBestGUIGradient.Rotation = 135
+
 local function scale(change)
 	local currentX = container.Size.X.Scale
 	local currentY = container.Size.Y.Scale
@@ -216,15 +234,55 @@ local function ParseGenerationValue(text)
 	return number
 end
 
+local function findBestRot()
+	local bestModel = nil
+	local bestValue = -math.huge
+	for _, obj in workspace:GetDescendants() do
+		if obj:IsA("TextLabel") and obj.Name == "Generation" then
+			local value = ParseGenerationValue(obj.Text)
+			local brainrot = obj:FindFirstAncestorOfClass("Model")
+			if value and bestValue < value then
+				bestValue = value
+				bestModel = brainrot
+			end
+		end
+	end
+	return bestModel
+end
+--//FindBestGUI
+local FindBestGUITitle = Instance.new("TextLabel")
+	FindBestGUITitle.Parent = FindBestGUIFrame
+	FindBestGUITitle.Size = UDim2.new(1,0,0.1,0)
+	FindBestGUITitle.Text = "🧠🔥 Best Brainrots: 🔥🧠"
+	FindBestGUITitle.BorderSizePixel = 0
+	FindBestGUITitle.BackgroundTransparency = 1
+	FindBestGUITitle.TextColor3 = Color3.fromRGB(255,255,255)
+	FindBestGUITitle.Interactable = false
+	FindBestGUITitle.TextWrapped = false
+	FindBestGUITitle.TextScaled = true
+	FindBestGUITitle.Font = Enum.Font.GothamBold
+	FindBestGUITitle.Position = UDim2.new(0,0,0.025,0)
+	FindBestGUITitle.TextXAlignment = Enum.TextXAlignment.Center
+local Gunk = Instance.new("UIGridLayout")
+	Gunk.Name = "GunkLayout"
+	Gunk.Parent = FindBestGUIFrame
+	Gunk.CellSize = UDim2.new(0.215,0,0.135,0)
+	Gunk.CellPadding = UDim2.new(0.035,0,0.05,0)
+	Gunk.SortOrder = Enum.SortOrder.LayoutOrder
+	Gunk.FillDirectionMaxCells = 4
+	Gunk.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
 local speedBoostActive = false
 local jumpBoostActive = false
 
-local PRIORITY_WALKSPEED = 60 -- Needs Work
-local DEFAULT_WALKSPEED = 18
+local PRIORITY_WALKSPEED = 51 -- Needs Work
+local DEFAULT_WALKSPEED = 34
 local PRIORITY_JUMPHEIGHT = 20 --Good
 local DEFAULT_JUMPHEIGHT = 7.2
 
-addSwitch("Speed Boost:", "speedToggle", 2, function(enabled)
+--//Making Buttons
+
+addSwitch(core, "Speed Boost:", "speedToggle", 2, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
@@ -233,7 +291,7 @@ addSwitch("Speed Boost:", "speedToggle", 2, function(enabled)
 	end
 end)
 
-addSwitch("Jump Boost:", "jumpToggle", 4, function(enabled)
+addSwitch(core, "Jump Boost:", "jumpToggle", 4, function(enabled)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
@@ -241,16 +299,66 @@ addSwitch("Jump Boost:", "jumpToggle", 4, function(enabled)
 		jumpBoostActive = enabled
 	end
 end)
-addSwitch("Scanner:", "scanner", 6, function(enabled)
+
+addSwitch(core, "Scanner:", "scanner", 6, function(enabled)
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		if obj:IsA("TextLabel") and obj.Name == "Generation" then
 			local value = ParseGenerationValue(obj.Text)
 			local brainrot = obj:FindFirstAncestorOfClass("Model")
 			
-			print("BrainRot: ",brainrot, " |  Value: ",value)
+			print("Model: ",brainrot, " |  Value: ",value)
 		end
 	end
 end)
+
+addSwitch(core, "Find Best: ", "findBest", 8, function(enabled)
+	local targetPos
+	local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+	if not FindBestGUIMenu.Enabled then
+		FindBestGUIMenu.Enabled = true
+		targetPos = UDim2.new(0, 0, 0.135, 0)
+	else
+		FindBestGUIMenu.Enabled = false
+		targetPos = UDim2.new(-0.2, 0, 0.135, 0)
+	end
+
+	local tween = TweenService:Create(FindBestGUIFrame, tweenInfo, {Position = targetPos})
+	tween:Play()
+end)
+
+addSwitch(FindBestGUIFrame, "Test: ", "testing", 2, function(enabled)
+	local character = getCharacter()
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	local best = findBestRot()
+	if not hrp or not best then return end
+	local p1 = Instance.new("Attachment")
+	p1.Parent = hrp
+	local p2 = Instance.new("Attachment")
+	p2.Parent = best:FindFirstChild("HumanoidRootPart") or best.PrimaryPart or best
+
+	local oldbeam = hrp:FindFirstChild("FortniteBurger") or nil
+	if oldbeam then oldbeam:destory() end
+	local beam = Instance.new("Beam")
+	beam.Name = "FortniteBurger"
+	beam.Attachment0 = p1
+	beam.Attachment1 = p2
+	beam.Parent = hrp
+end)
+
+addSwitch(FindBestGUIFrame, "Clear Beams: ", "beamClear", 4, function(enabled)
+	local character = getCharacter()
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	for _, child in ipairs(hrp:GetChildren()) do
+		if child:IsA("Beam") and child.Name == "FortniteBurger" then
+			child:Destroy()
+		end
+	end
+end)
+
 
 game:GetService("RunService").Stepped:Connect(function()
 	local char = player.Character
